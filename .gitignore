@@ -1,0 +1,10 @@
+Library
+Temp
+tmp
+*.csproj
+*.sln
+*.pidb
+*.userprefs
+.DS_Store
+xcshareddata
+.idea
