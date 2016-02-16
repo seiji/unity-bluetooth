@@ -8,7 +8,7 @@ public class Packager
 	{
         AssetDatabase.ExportPackage(
                 new string[]{"Assets/Plugins"},
-                "bluetoothservice.unitypackage",
+                "unity-bluetooth.unitypackage",
                 ExportPackageOptions.Recurse);
 	}
 }

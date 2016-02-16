@@ -25,7 +25,7 @@ end
 desc "pack"
 task :pack do
   system "#{UNITY}/MacOS/Unity -projectPath `pwd`/build/Packager -batchmode -quit -executeMethod Packager.Export"
-  FileUtils.mv "build/Packager/bluetoothservice.unitypackage", "./dist"
+  FileUtils.mv "build/Packager/unity-bluetooth.unitypackage", "./dist"
 end
 
 private

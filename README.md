@@ -4,7 +4,7 @@ unity-bluetooth is a plugin for Unity that connect each other with bluetooth cla
 
 ### How to use
 
-(TBW)
+TODO:
 
 ## Required
 
@@ -18,7 +18,8 @@ https://developer.apple.com/library/ios/documentation/DeviceInformation/Referenc
 
 ### Sample Project
 
+TODO:
     $ open sample/Assets/Sample.unity
-    $ open dist/unity-ble.unitypackage
+    $ open dist/unity-bluetooth.unitypackage
     Import all files
 
