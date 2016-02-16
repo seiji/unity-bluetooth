@@ -19,6 +19,7 @@ https://developer.apple.com/library/ios/documentation/DeviceInformation/Referenc
 ### Sample Project
 
 TODO:
+
     $ open sample/Assets/Sample.unity
     $ open dist/unity-bluetooth.unitypackage
     Import all files
