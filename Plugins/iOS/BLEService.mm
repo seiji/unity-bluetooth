@@ -8,6 +8,11 @@
 
 #import "BLEService.h"
 
+#define SERVICE_UUID_DEFAULT @"789F0690-FB6E-4D46-8DD8-52B14B29A1A1"
+#define CHARACTERISTIC_UUID  @"7F855F82-9378-4508-A3D2-CD989104AF22"
+
+static char const *UNITY_GAMEOBJECT_NAME = "BluetoothCallback";
+
 @interface BLEServiceUnityDelegator : NSObject <BLEServiceCentralDelegate,BLEServicePeripheralDelegate>
 @end
 
@@ -60,23 +65,32 @@ extern "C" {
         }
     }
 }
+#pragma mark - BLEServiceUnityDelegator
 
 @implementation BLEServiceUnityDelegator
 #pragma mark - BLEServiceCentralDelegate
 
 - (void)centralServiceDidUpdateState:(BLEServiceCentral *)service
 {
-    UnitySendMessage("BLECallback", "OnDidUpdateState", "");
+    UnitySendMessage(UNITY_GAMEOBJECT_NAME, "OnDidUpdateState", "");
+}
+
+- (void)centralService:(BLEServiceCentral *)service
+ didDiscoverPeripheral:(CBPeripheral *)peripheral
+     advertisementData:(NSDictionary<NSString *, id> *)advertisementData
+                  RSSI:(NSNumber *)RSSI
+{
+//    UnitySendMessage(UNITY_GAMEOBJECT_NAME, "OnDidUpdateState", peripheral.identifier);
 }
 
 - (void)centralServiceDidConnectPeripheral:(BLEServiceCentral *)service
 {
-    UnitySendMessage("BLECallback", "OnDidConnect", "");
+    UnitySendMessage(UNITY_GAMEOBJECT_NAME, "OnDidConnect", "");
 }
 
 - (void)centralServiceDidDisconnectPeripheral:(BLEServiceCentral *)service
 {
-    UnitySendMessage("BLECallback", "OnDidDisconnect", "");
+    UnitySendMessage(UNITY_GAMEOBJECT_NAME, "OnDidDisconnect", "");
 }
 
 - (void)centralService:(BLEServiceCentral *)service
@@ -85,13 +99,13 @@ extern "C" {
     NSString *base64String = [data base64EncodedStringWithOptions:0];
     const char *utf8String = [base64String cStringUsingEncoding:NSUTF8StringEncoding];
     
-    UnitySendMessage("BLECallback", "OnDidReceiveWriteRequests", utf8String);
+    UnitySendMessage(UNITY_GAMEOBJECT_NAME, "OnDidReceiveWriteRequests", utf8String);
 }
 
 #pragma mark - BLEServicePeripheralDelegate
 - (void)peripheralServiceDidUpdateState:(BLEServicePeripheral *)service
 {
-    UnitySendMessage("BLECallback", "OnDidUpdateState", "");
+    UnitySendMessage(UNITY_GAMEOBJECT_NAME, "OnDidUpdateState", "");
 }
 
 - (NSData *)peripheralServiceDidReceiveReadRequest:(BLEServicePeripheral *)service
@@ -107,34 +121,17 @@ extern "C" {
     NSString *base64String = [data base64EncodedStringWithOptions:0];
     const char *utf8String = [base64String cStringUsingEncoding:NSUTF8StringEncoding];
     
-    UnitySendMessage("BLECallback", "OnDidReceiveWriteRequests", utf8String);
+    UnitySendMessage(UNITY_GAMEOBJECT_NAME, "OnDidReceiveWriteRequests", utf8String);
 }
 
 - (void)peripheralServiceDidSubscribeToCharacteristic:(BLEServicePeripheral *)service
 {
-    UnitySendMessage("BLECallback", "OnDidConnect", "");
+    UnitySendMessage(UNITY_GAMEOBJECT_NAME, "OnDidConnect", "");
 }
 
 - (void)peripheralServiceDidUnsubscribeFromCharacteristic:(BLEServicePeripheral *)service
 {
-    UnitySendMessage("BLECallback", "OnDidDisconnect", "");
-}
-
-@end
-
-@implementation NSData (Order)
-
-- (NSData *)reverse
-{
-    const char *bytes = (const char *)[self bytes];
-    char *reverseBytes = (char *)malloc(sizeof(char) * [self length]);
-    int index = (int)[self length] - 1;
-    for (int i = 0; i < [self length]; i++)
-        reverseBytes[index--] = bytes[i];
-    NSData *reversedData = [NSData dataWithBytes:reverseBytes length:[self length]];
-    free(reverseBytes);
-    
-    return reversedData;
+    UnitySendMessage(UNITY_GAMEOBJECT_NAME, "OnDidDisconnect", "");
 }
 
 @end
@@ -176,9 +173,9 @@ extern "C" {
 #pragma mark - BLEServiceProtocol
 - (void)start:(NSString *)uuidString
 {
-    if (uuidString != nil) {
-        _serviceUUID = [CBUUID UUIDWithString:uuidString];
-    }
+//    if (uuidString != nil) {
+//        _serviceUUID = [CBUUID UUIDWithString:uuidString];
+//    }
     _manager = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
 }
 
@@ -335,8 +332,12 @@ extern "C" {
      advertisementData:(NSDictionary<NSString *, id> *)advertisementData
                   RSSI:(NSNumber *)RSSI
 {
-    BLE_LOG();
+    BLE_LOG(@"%@ : %@", peripheral, RSSI);
+    if (self.delegate != nil && [self.delegate respondsToSelector:@selector(centralService:didDiscoverPeripheral:advertisementData:RSSI:)]) {
+        [self.delegate centralService:self didDiscoverPeripheral:peripheral advertisementData:advertisementData RSSI:RSSI];
+    }
     _peripheral = peripheral;
+    
     [self transitionState:BLEServiceCentralStateWaitingForConnecting];
 }
 
@@ -567,7 +568,7 @@ didWriteValueForDescriptor:(CBDescriptor *)descriptor
 - (void)pause
 {
     [_manager stopAdvertising];
-    [self write:[@"" dataUsingEncoding:NSUTF8StringEncoding] withResponse:NO];
+//    [self write:[@"" dataUsingEncoding:NSUTF8StringEncoding] withResponse:NO];
 }
 
 - (void)resume
@@ -647,8 +648,8 @@ didWriteValueForDescriptor:(CBDescriptor *)descriptor
                     CBCharacteristicPropertyRead |
                     CBCharacteristicPropertyWrite |
                     CBCharacteristicPropertyWriteWithoutResponse |
-                    CBCharacteristicPropertyNotify |
-                    CBCharacteristicPropertyNotifyEncryptionRequired ;
+                    CBCharacteristicPropertyNotify;
+//                    CBCharacteristicPropertyNotifyEncryptionRequired;
                     
                     CBAttributePermissions perm =
                     CBAttributePermissionsReadable | CBAttributePermissionsWriteable;
@@ -817,6 +818,24 @@ didUnsubscribeFromCharacteristic:(CBCharacteristic *)characteristic
 - (void)peripheralManagerIsReadyToUpdateSubscribers:(CBPeripheralManager *)peripheral
 {
     [self processTransmitQueue];
+}
+
+@end
+
+#pragma mark - NSData (Order)
+@implementation NSData (Order)
+
+- (NSData *)reverse
+{
+    const char *bytes = (const char *)[self bytes];
+    char *reverseBytes = (char *)malloc(sizeof(char) * [self length]);
+    int index = (int)[self length] - 1;
+    for (int i = 0; i < [self length]; i++)
+        reverseBytes[index--] = bytes[i];
+    NSData *reversedData = [NSData dataWithBytes:reverseBytes length:[self length]];
+    free(reverseBytes);
+    
+    return reversedData;
 }
 
 @end
